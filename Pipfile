@@ -1,0 +1,19 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+fastapi = "*"
+pydantic = "*"
+pydantic-settings = "*"
+sqlalchemy = "*"
+mysql-connector-python = "*"
+
+[dev-packages]
+gitlint = '*'
+autopep8 = "*"
+pylint = "*"
+
+[requires]
+python_version = "3.12"
