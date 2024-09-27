@@ -4,18 +4,18 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-fastapi = "*"
-pydantic = "*"
-pydantic-settings = "*"
-sqlalchemy = "*"
-mysql-connector-python = "*"
-pyparsing = "*"
+fastapi = "0.115.0"
+pydantic = "2.9.2"
+pydantic-settings = "2.5.2"
+sqlalchemy = "2.0.35"
+mysql-connector-python = "9.0.0"
+pyparsing = "3.1.4"
 
 [dev-packages]
-gitlint = '*'
-autopep8 = "*"
-pylint = "*"
-pre-commit = "*"
+gitlint = '0.19.1'
+autopep8 = "2.3.1"
+pylint = "3.3.1"
+pre-commit = "3.8.0"
 
 [requires]
 python_version = "3.12"
