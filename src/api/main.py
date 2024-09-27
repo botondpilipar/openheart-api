@@ -3,7 +3,7 @@ from fastapi import FastAPI, APIRouter
 from pathlib import Path
 from mysql import connector
 
-from configuration import MainConfiguration, RuntimeConfiguration
+from src.api.configuration import MainConfiguration, RuntimeConfiguration
 
     
 app = FastAPI(debug=True, title=MainConfiguration.APP_NAME)

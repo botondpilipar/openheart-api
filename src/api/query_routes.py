@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from configuration import MainConfiguration, RuntimeConfiguration
+from src.api.configuration import MainConfiguration, RuntimeConfiguration
 import pydantic
 
 app: FastAPI = MainConfiguration.RUNTIME.app
