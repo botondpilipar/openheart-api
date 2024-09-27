@@ -1,5 +1,5 @@
-"Module for runtime and static configurations of openheart-api API backend"
-
+"""Module for runtime and static configurations of openheart-api API backend"""
+from __future__ import annotations
 from os import getenv
 from pathlib import Path
 from fastapi import FastAPI
@@ -53,13 +53,26 @@ class DatabaseConfigration:
 
 
 class MainConfiguration:
+    _INSTANCE = None
     APP_NAME = getenv('APP_NAME')
     FAST_API_PORT = getenv('FAST_API_PORT')
     RUNTIME = None
 
-    def __init__(self, app: FastAPI):
-        if MainConfiguration.RUNTIME is None:
-            MainConfiguration.RUNTIME = RuntimeConfiguration(app, DatabaseConfigration())
+    def __init__(self, app: FastAPI | None = None, database: DatabaseConfigration | None = None):
+
+        if MainConfiguration._INSTANCE is not None:
+            return
+        app = FastAPI() if app is None else app
+        database = DatabaseConfigration() if database is None else database
+
+        MainConfiguration.RUNTIME = RuntimeConfiguration(app, database)
+        MainConfiguration._INSTANCE = self
+
+    @classmethod
+    def instance(cls) -> MainConfiguration:
+        if not cls._INSTANCE:
+            MainConfiguration()
+        return cls._INSTANCE
 
     @property
     def app_name(self):
