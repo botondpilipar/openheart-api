@@ -1,5 +1,22 @@
 repos:
 - repo: https://github.com/jorisroovers/gitlint
-  rev: '' # pick a tag / sha to use
+  rev: 'v0.19.1' # pick a tag / sha to use
   hooks:
   - id: gitlint
+
+- repo: local
+  hooks:
+  - id: pylint
+    name: pylint
+    entry: pylint
+    language: system
+    types: [python]
+    args: ["-rn", # Only display messages
+      "-sn", # Don't display the score
+      "--rcfile=.pylintrc", # Link to your config file
+    ]
+
+- repo: https://github.com/hhatto/autopep8
+  rev: 'v2.3.1' # select the tag or revision you want, or run `pre-commit autoupdate`
+  hooks:
+  - id: autopep8
