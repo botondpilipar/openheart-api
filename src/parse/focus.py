@@ -1,72 +1,92 @@
 """Module for the first step of text processing, which is reducing,
 a.k.a 'focusing' on the kernel parameter lines themselves"""
+import re
+from typing import List
 
 from src.parse.step import ParseStep, ParseStepSet
-from pyparsing import Char, Optional, Word, White, LineStart, alphanums
-from typing import List
-from itertools import chain
+from src.parse.records import KernelParameter
+
 
 class FilterNonIndented(ParseStep):
-    
+
     def __init__(self) -> None:
-        self.indentation = LineStart() + White()
-        
-    def parse(self, input) -> str | List[str]:
-        list_input = self.input_list(input)
-        return [ line for line in list_input if not self.indentation.parse_string(line)]
-    
-    def is_parsable(self, input: str | List[str]) -> bool:
-        return input != None or input != [] or input.strip() != ""
-    
+        super().__init__(produces_record=False)
+        self.indentation = re.compile(r'^\s+')
+
+    def parse(self, input_str) -> str | List[str]:
+        list_input = self.input_list(input_str)
+        return [line for line in list_input if not self.indentation.match(line)]
+
+    def is_parsable(self, input_str: str | List[str]) -> bool:
+        return input_str is not None and input_str != [] and input_str.strip() != ""
+
+
 class FocusFirstWord(ParseStep):
+
     def __init__(self) -> None:
-        self.first_word = Word(alphanums + ['_', '.'])
-        
-    def parse(self, input: str | List[str]) -> str | List[str]:
-        list_input = self.input_list(input)
-        parsed_double_list = [ self.first_word.parse_string(line).as_list() for line in list_input ]
-        return chain.from_iterable(parsed_double_list) # Flatten to single list
-        
-    def is_parsable(self, input: str | List[str]) -> bool:
-        list_input = self.input_list(input)
-        return all(line[0].is_alnum() for line in list_input)
-    
+        super().__init__(produces_record=False)
+        self.first_word = re.compile(r'^([a-zA-Z0-9._\-]+)')
+
+    def parse(self, input_str: str | List[str]) -> str | List[str]:
+        list_input = self.input_list(input_str)
+        parsed_list = []
+        for line in list_input:
+            match_obj = self.first_word.match(line)
+            if not match_obj:
+                raise ValueError(f'Line {line} has no parseable first word by {self.first_word.pattern}')
+            parsed_list.append(match_obj.group(1))
+
+        return parsed_list
+
+    def is_parsable(self, input_str: str | List[str]) -> bool:
+        list_input = self.input_list(input_str)
+        return input_str is not None and all(line[0].isalnum() for line in list_input)
+
+
 class SeparateModuleAndParamName(ParseStep):
-    def parse(self, input: str | List[str]) -> str | List[str]:
-        list_input = self.input_list(input)
+
+    def __init__(self, module_param_separator: str = ':'):
+        super().__init__(produces_record=False)
+        self.values_parsed: dict | None = None
+        self.separator = module_param_separator
+
+    def parse(self, input_str: str | List[str]) -> str | List[str]:
+        list_input = self.input_list(input_str)
         result = []
         for line in list_input:
             if '.' in line:
-                dot_index = line.index('.')
-                module_name = line[:dot_index]
-                param_name = line[dot_index + 1:]
-                result.append((module_name, param_name))
+                module_name, param_name, *_remaining = line.split('.')
+                assert len(_remaining) == 0
+                result.append((param_name, module_name))
             else:
-                result.append(('core', line))
-                
-        return [ f'{comp[0]} - {comp[1]}' for comp in result]
-                
-    
-    def is_parsable(self, input: str | List[str]) -> bool:
+                result.append((line, 'core'))
+        self.values_parsed = result
+
+        return [self.separator.join([comp[1], comp[0]]) for comp in result]
+
+    def as_record(self):
+        return [KernelParameter(*pair) for pair in self.values_parsed] if self.values_parsed is not None else None
+
+    def is_parsable(self, _: str | List[str]) -> bool:
         return True
+
 
 class FocusStepSet(ParseStepSet):
     def __init__(self) -> None:
-        self.input_cache = dict()
+        self.input_cache = {}
         self.steps: List[ParseStep] = [FilterNonIndented(), FocusFirstWord(), SeparateModuleAndParamName()]
 
-    def reduce(self, input: str | List[str]) -> List[str]:
+    def reduce(self, input_str: str | List[str]) -> List[str]:
         steps_taken = 0
-        aggregate = input
+        aggregate = input_str
         for step in self.steps:
             if step.is_parsable(aggregate):
                 steps_taken += 1
                 aggregate = step.parse(aggregate)
             else:
                 break
-        self.input_cache[input] = steps_taken
+        self.input_cache[input_str] = steps_taken
         return aggregate
-    
-    @property
-    def steps_taken(self, input: str | List[str]) -> int:
-        return self.input_cache.get(input, 0)
+
+    def steps_taken(self, input_str: str | List[str]) -> int:
+        return self.input_cache.get(input_str, 0)
